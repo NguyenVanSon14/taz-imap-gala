@@ -1,0 +1,512 @@
+/* ============================================================
+   film.css — hiệu ứng phim: hạt nhiễu, vết xước, light leak,
+   dải phim hai rìa, nhấp nháy "đầu phim", khung phim nhựa,
+   rạp chiếu (màn chiếu + ghế), cuộn phim ảnh, credit roll
+============================================================ */
+
+/* ============ LỚP PHIM CŨ PHỦ TOÀN TRANG ============ */
+.film-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+body.is-intro .film-fx { display: none; }
+
+.film-fx__grain {
+  position: absolute;
+  inset: -60px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 .94  0 0 0 0 .82  1.7 0 0 0 -.62'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+  opacity: .1;
+  animation: grainShift .9s steps(1) infinite;
+  will-change: transform;
+}
+
+@keyframes grainShift {
+  0% { transform: translate3d(0, 0, 0); }
+  12% { transform: translate3d(-22px, 14px, 0); }
+  25% { transform: translate3d(18px, -26px, 0); }
+  37% { transform: translate3d(-30px, -8px, 0); }
+  50% { transform: translate3d(10px, 30px, 0); }
+  62% { transform: translate3d(-14px, -30px, 0); }
+  75% { transform: translate3d(26px, 8px, 0); }
+  87% { transform: translate3d(-6px, 22px, 0); }
+}
+
+/* Vết xước dọc thỉnh thoảng lướt qua */
+.film-fx__scratch {
+  position: absolute;
+  top: -5%;
+  bottom: -5%;
+  width: 1px;
+  opacity: 0;
+  background: linear-gradient(180deg, transparent, rgba(255, 245, 220, .6) 18%, rgba(255, 245, 220, .25) 65%, transparent);
+}
+
+.film-fx__scratch--a { left: 23%; animation: scratchA 7s linear infinite; }
+.film-fx__scratch--b { left: 71%; animation: scratchB 11s linear 2s infinite; }
+
+@keyframes scratchA {
+  0%, 86% { opacity: 0; transform: translate3d(0, 0, 0); }
+  87% { opacity: .55; }
+  90% { opacity: .3; transform: translate3d(14px, 0, 0); }
+  93% { opacity: .5; transform: translate3d(-6px, 0, 0); }
+  95%, 100% { opacity: 0; transform: translate3d(30px, 0, 0); }
+}
+
+@keyframes scratchB {
+  0%, 90% { opacity: 0; transform: translate3d(0, 0, 0); }
+  91% { opacity: .45; }
+  94% { opacity: .25; transform: translate3d(-18px, 0, 0); }
+  97%, 100% { opacity: 0; transform: translate3d(-40px, 0, 0); }
+}
+
+/* Ánh cháy sáng cam ở mép trang */
+.film-fx__leak {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 28% 55% at 0% 40%, rgba(255, 122, 26, .16), transparent 70%),
+    radial-gradient(ellipse 24% 40% at 100% 85%, rgba(255, 122, 26, .12), transparent 70%),
+    radial-gradient(ellipse 40% 18% at 70% 0%, rgba(255, 150, 60, .08), transparent 70%);
+  animation: leakPulse 9s ease-in-out infinite alternate;
+}
+
+@keyframes leakPulse {
+  from { opacity: .5; }
+  to { opacity: 1; }
+}
+
+/* ============ DẢI PHIM HAI RÌA ============ */
+.film-edges {
+  --hole-step: 22px;
+  position: fixed;
+  inset: 0;
+  z-index: 880;
+  pointer-events: none;
+  transition: opacity .5s ease;
+}
+
+@media (min-width: 768px) {
+  .film-edges { --hole-step: 30px; }
+}
+
+body.is-intro .film-edges,
+body.edges-off .film-edges { opacity: 0; }
+
+.film-edges__strip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--strip-w);
+  overflow: hidden;
+  background: #090504;
+}
+
+.film-edges__strip--l { left: 0; box-shadow: inset -1px 0 0 rgba(240, 201, 106, .2), 4px 0 14px rgba(255, 122, 26, .08); }
+.film-edges__strip--r { right: 0; box-shadow: inset 1px 0 0 rgba(240, 201, 106, .2), -4px 0 14px rgba(255, 122, 26, .08); }
+
+/* Lỗ phim chạy chậm từ dưới lên (dịch đúng 1 bước lỗ rồi lặp) */
+.film-edges__strip i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(100% + var(--hole-step));
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 22' preserveAspectRatio='none'><rect x='5' y='5' width='10' height='12' rx='2.4' fill='%23e9dcc0' fill-opacity='.82'/></svg>") 0 0 / 100% var(--hole-step) repeat-y;
+  animation: holesUp 1.8s linear infinite;
+  will-change: transform;
+}
+
+@keyframes holesUp {
+  to { transform: translate3d(0, calc(-1 * var(--hole-step)), 0); }
+}
+
+/* ============ NHẤP NHÁY "ĐẦU CUỘN PHIM" (mỗi trang 1 lần) ============ */
+.scene::before,
+.scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.scene::before { background: #040201; }
+
+.scene::after {
+  background:
+    radial-gradient(circle at 18% 28%, rgba(60, 35, 10, .55) 0 2px, transparent 3px),
+    radial-gradient(circle at 72% 18%, rgba(60, 35, 10, .5) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 44% 62%, rgba(60, 35, 10, .55) 0 3px, transparent 4px),
+    radial-gradient(circle at 86% 74%, rgba(60, 35, 10, .45) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 88%, rgba(60, 35, 10, .4) 0 1.5px, transparent 2.5px),
+    #fff1d0;
+}
+
+.scene.is-leader::before { animation: leaderDark .42s linear 1; }
+.scene.is-leader::after { animation: leaderBright .42s linear 1; }
+
+@keyframes leaderBright {
+  0% { opacity: 0; }
+  10% { opacity: .5; }
+  26% { opacity: 0; }
+  66% { opacity: 0; }
+  76% { opacity: .3; }
+  100% { opacity: 0; }
+}
+
+@keyframes leaderDark {
+  0%, 26% { opacity: 0; }
+  34% { opacity: .55; }
+  50% { opacity: .3; }
+  62%, 100% { opacity: 0; }
+}
+
+/* ============ KHUNG PHIM NHỰA (bo góc lớn, viền tối, vignette) ============ */
+.film-frame {
+  position: relative;
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(32, 21, 16, .94), rgba(15, 9, 7, .96));
+  border: 1px solid rgba(240, 201, 106, .2);
+  box-shadow:
+    0 0 0 5px #0a0605,
+    0 0 0 6px rgba(240, 201, 106, .1),
+    inset 0 0 50px rgba(0, 0, 0, .65),
+    0 24px 50px rgba(0, 0, 0, .5);
+}
+
+.film-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 122, 26, .2), transparent 6%),
+    linear-gradient(270deg, rgba(255, 122, 26, .08), transparent 5%);
+}
+
+/* ============ RẠP CHIẾU: đèn trần, vòm sân khấu, đèn rọi, màn chiếu, ghế ============ */
+.cinema {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse 85% 55% at 50% 28%, #2a1712 0%, #120a07 60%, #070403 100%);
+}
+
+.cinema__lights {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 14%;
+  background-image: radial-gradient(circle, rgba(255, 244, 214, .95) 0 1.4px, rgba(255, 222, 160, .22) 3px, transparent 6px);
+  background-size: 16.66% 50%;
+  background-position: center 40%;
+  opacity: .85;
+}
+
+.cinema__arch {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: 11%;
+  height: 40%;
+  border: 2px solid rgba(201, 151, 59, .32);
+  border-bottom: 0;
+  border-radius: 48% 48% 0 0 / 20% 20% 0 0;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, .6), 0 -2px 18px rgba(201, 151, 59, .1);
+}
+
+.cinema__screen {
+  position: absolute;
+  background: linear-gradient(180deg, #d8cdb9, #b5a790);
+  border-radius: 3px;
+  box-shadow: 0 0 46px rgba(255, 236, 200, .28), inset 0 0 30px rgba(0, 0, 0, .3);
+}
+
+/* Hai đèn rọi chiếu vào màn */
+.cinema__beam {
+  position: absolute;
+  top: 26%;
+  width: 46%;
+  height: 30%;
+  pointer-events: none;
+  filter: blur(6px);
+  opacity: .8;
+}
+
+/* Lõi sáng ở mép tường, loang mờ dần về phía màn chiếu */
+.cinema__beam--l {
+  left: 0;
+  background:
+    radial-gradient(circle at 0 50%, rgba(255, 246, 225, .75) 0 2%, transparent 7%),
+    linear-gradient(90deg, rgba(255, 242, 214, .32), rgba(255, 242, 214, 0) 95%);
+  clip-path: polygon(0 46%, 0 54%, 100% 100%, 100% 0);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
+}
+
+.cinema__beam--r {
+  right: 0;
+  background:
+    radial-gradient(circle at 100% 50%, rgba(255, 246, 225, .75) 0 2%, transparent 7%),
+    linear-gradient(270deg, rgba(255, 242, 214, .32), rgba(255, 242, 214, 0) 95%);
+  clip-path: polygon(100% 46%, 100% 54%, 0 100%, 0 0);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent);
+}
+
+/* Dãy ghế đỏ nhìn từ phía sau, hàng xa nhỏ dần */
+.seats {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.seats__row {
+  --sw: 12%;
+  display: block;
+  flex: none;
+  height: 20%;
+  background-image:
+    radial-gradient(ellipse 30% 12% at 50% 16%, rgba(255, 130, 120, .35), transparent 100%),
+    radial-gradient(ellipse 44% 46% at 50% 46%, #a3151f 0 90%, transparent 100%),
+    linear-gradient(90deg, transparent 6%, #6d0a12 6% 94%, transparent 94%);
+  background-size: var(--sw) 100%, var(--sw) 100%, var(--sw) 56%;
+  background-position: var(--sx, 0) 0, var(--sx, 0) 0, var(--sx, 0) 100%;
+  background-repeat: repeat-x;
+}
+
+.seats__row:nth-child(even) { --sx: calc(var(--sw) / 2); }
+.seats__row:nth-child(1) { --sw: 6.25%; height: 10%; margin-inline: 12%; opacity: .4; }
+.seats__row:nth-child(2) { --sw: 7.7%; height: 13%; margin-inline: 8%; opacity: .55; }
+.seats__row:nth-child(3) { --sw: 9.1%; height: 16%; margin-inline: 4%; opacity: .7; }
+.seats__row:nth-child(4) { --sw: 11.1%; height: 20%; opacity: .85; }
+.seats__row:nth-child(5) { --sw: 14.3%; height: 25%; margin-inline: -3%; }
+
+.seats::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 4, 3, .4), transparent 40%, rgba(7, 4, 3, .55));
+}
+
+/* ============ CUỘN PHIM ẢNH (trang Giới thiệu) ============ */
+.reel {
+  position: relative;
+  height: 112px;
+  overflow: hidden;
+  background: #090504;
+}
+
+.reel__track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  padding: 17px 0;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 17'><rect x='4' y='5' width='10' height='7' rx='1.8' fill='%23e9dcc0' fill-opacity='.75'/></svg>") 0 0 / 18px 17px repeat-x,
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 17'><rect x='4' y='5' width='10' height='7' rx='1.8' fill='%23e9dcc0' fill-opacity='.75'/></svg>") 0 100% / 18px 17px repeat-x,
+    #120b08;
+  animation: reelLeft 70s linear infinite;
+  will-change: transform;
+}
+
+.reel--bottom .reel__track { animation-name: reelRight; }
+
+@keyframes reelLeft {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes reelRight {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+.reel__frame {
+  flex: none;
+  width: 116px;
+  height: 100%;
+  margin-right: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--film-cream), var(--film-cream-2));
+  box-shadow: inset 0 0 18px rgba(138, 90, 28, .35);
+}
+
+.reel__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+button.reel__frame { cursor: zoom-in; }
+
+/* Hai bên ngả sepia, đi qua giữa thì rõ màu hơn */
+.reel::before,
+.reel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.reel::before {
+  z-index: 1;
+  background: linear-gradient(90deg, rgba(112, 66, 20, .9), rgba(112, 66, 20, 0) 36%, rgba(112, 66, 20, 0) 64%, rgba(112, 66, 20, .9));
+  mix-blend-mode: color;
+}
+
+.reel::after {
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(9, 5, 4, .7), transparent 20%, transparent 80%, rgba(9, 5, 4, .7));
+}
+
+/* ============ CREDIT ROLL + VIDEO THROWBACK ============ */
+.credits {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 12%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 12%, #000 86%, transparent 100%);
+}
+
+.credits__roll {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 0 6%;
+  text-align: center;
+  color: #f3ead6;
+  will-change: transform;
+  transform: translate3d(0, 420px, 0);
+}
+
+.credits__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: .32em;
+  margin-bottom: 10px;
+  padding-left: .32em;
+  color: var(--gold-100);
+}
+
+.credits__meta {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  color: var(--gold-300);
+}
+
+.credits__meta-vi {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--text-soft);
+  margin: 4px 0 34px;
+}
+
+.credits__roll p:not(.credits__meta):not(.credits__meta-vi) {
+  font-size: 15px;
+  line-height: 1.8;
+  margin-bottom: 26px;
+}
+
+.credits__greet { font-style: italic; color: var(--gold-100); }
+
+.credits__sign {
+  margin-top: 40px;
+  color: var(--text-soft);
+}
+
+.credits__sign strong {
+  display: inline-block;
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: .06em;
+  color: var(--gold-100);
+}
+
+.credits.is-paused .credits__roll { opacity: .8; }
+
+/* Giảm chuyển động: hiện toàn văn trong khung cuộn được */
+.credits.is-static {
+  overflow-y: auto;
+  cursor: auto;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.credits.is-static .credits__roll {
+  position: static;
+  transform: none;
+  padding-block: 12px;
+}
+
+.throwback {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 0 0 1px rgba(240, 201, 106, .25);
+}
+
+.throwback__media,
+.throwback__media video,
+.throwback__media iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+
+.throwback__sound {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 201, 106, .5);
+  background: rgba(10, 6, 4, .72);
+  color: var(--gold-100);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ============ GIẢM CHUYỂN ĐỘNG ============ */
+@media (prefers-reduced-motion: reduce) {
+  .film-fx__grain,
+  .film-fx__leak,
+  .film-edges__strip i,
+  .reel__track { animation: none; }
+
+  .film-fx__scratch { display: none; }
+
+  .reel { overflow-x: auto; }
+
+  .scene.is-leader::before,
+  .scene.is-leader::after { animation: none; }
+}

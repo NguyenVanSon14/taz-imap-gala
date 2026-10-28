@@ -1,0 +1,7 @@
+# File nguồn lớn (video/playlist gốc): không đẩy lên GitHub, Cloudflare Pages không nhận file > 25 MB.
+assets/audio/*.mp4
+assets/video/*.mov
+.wrangler/
+node_modules/
+Thumbs.db
+desktop.ini
