@@ -8,10 +8,10 @@
 // Để trống thì thiệp vẫn chạy, chỉ form xác nhận báo "chưa gửi được".
 // ============================================================
 export const firebaseConfig = {
-  apiKey: "",      // TODO: điền từ project Firebase sự kiện mới
-  authDomain: "",  // "<project-id>.firebaseapp.com"
-  projectId: "",
-  databaseURL: "", // "https://<project-id>-default-rtdb.asia-southeast1.firebasedatabase.app"
+  apiKey: "AIzaSyCkWTdYBQ7JwdfUHx0_-P8NyV0ln_UazA8",
+  authDomain: "taz-event-90874.firebaseapp.com",
+  projectId: "taz-event-90874",
+  databaseURL: "https://taz-event-90874-default-rtdb.asia-southeast1.firebasedatabase.app",
 };
 
 export const rsvpConfig = {
