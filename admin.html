@@ -168,6 +168,52 @@
       background: var(--primary-hover);
     }
 
+    .login-input {
+      width: 100%;
+      height: 44px;
+      margin-bottom: 10px;
+      padding: 0 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      font-family: var(--font-sans);
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+      background: #fff;
+    }
+
+    .login-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(201, 151, 59, .25);
+    }
+
+    .btn-submit:disabled { opacity: .7; cursor: wait; }
+
+    .th-act, .td-act {
+      width: 40px;
+      text-align: center !important;
+    }
+
+    .btn-del {
+      border: 1px solid #f1c7c7;
+      background: #fff;
+      color: #b91c1c;
+      border-radius: 7px;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn-del:hover { background: #fef2f2; }
+
+    .sync-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+      margin: -4px 2px 8px;
+    }
+
     .pin-error {
       color: #d9534f;
       font-size: 12px;
@@ -746,18 +792,16 @@
     server (Live Server trong VS Code, hoặc <code>npx serve</code>).
   </div>
 
-  <!-- ============ MÀN HÌNH BẢO MẬT (PIN) ============ -->
+  <!-- ============ ĐĂNG NHẬP ADMIN (Firebase Email/Password) ============ -->
   <section class="pin-screen" id="pinScreen">
     <div class="pin-card">
       <span class="pin-icon">🔒</span>
-      <h1>Nhập Mã Bảo Mật</h1>
-      <p class="pin-subtitle">Vui lòng nhập mã PIN quản trị để tiếp tục</p>
-      <form id="pinForm" onsubmit="return false;">
-        <div class="pin-input-wrap">
-          <input type="password" id="pinInput" class="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4"
-            placeholder="• • • •" autocomplete="current-password" autofocus required />
-        </div>
-        <button type="submit" id="pinSubmitBtn" class="btn-submit">XÁC NHẬN</button>
+      <h1>Đăng Nhập Quản Trị</h1>
+      <p class="pin-subtitle">Dùng tài khoản admin Firebase (project Graduation)</p>
+      <form id="loginForm" novalidate>
+        <input type="email" id="loginEmail" class="login-input" placeholder="Email admin" autocomplete="username" required />
+        <input type="password" id="loginPassword" class="login-input" placeholder="Mật khẩu" autocomplete="current-password" required />
+        <button type="submit" id="loginBtn" class="btn-submit">ĐĂNG NHẬP</button>
         <p class="pin-error" id="pinError"></p>
       </form>
     </div>
@@ -776,6 +820,9 @@
           </svg>
           <span>Vào thư mời chính</span>
         </a>
+        <button type="button" id="adminRefreshBtn" class="btn-header btn-header--main">
+          <span>↻ Làm mới</span>
+        </button>
         <button type="button" id="adminLogoutBtn" class="btn-header btn-header--logout">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -825,6 +872,7 @@ Thầy Cô tổ Tiếng Anh"></textarea>
     </div>
 
     <div class="region-row" id="regionStats"></div>
+    <p class="sync-note" id="syncNote"></p>
 
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
@@ -853,11 +901,12 @@ Thầy Cô tổ Tiếng Anh"></textarea>
               <th class="th-region">Suất Chiếu</th>
               <th class="th-status">Phản Hồi</th>
               <th class="th-time">Thời Gian</th>
+              <th class="th-act" aria-label="Xóa"></th>
             </tr>
           </thead>
           <tbody id="guestTableBody">
             <tr>
-              <td colspan="5" class="empty-state">Đang tải dữ liệu từ Firestore...</td>
+              <td colspan="6" class="empty-state">Đang tải dữ liệu từ Firestore...</td>
             </tr>
           </tbody>
         </table>
@@ -866,14 +915,7 @@ Thầy Cô tổ Tiếng Anh"></textarea>
   </div>
 
   <script type="module">
-    import {
-      guestbookCollection,
-      rsvpCollection,
-      getDocs,
-      onSnapshot,
-      query,
-      db,
-    } from "./js/firebase-config.js";
+    import { signInAdmin, signOutAdmin, currentAdmin, loadAllRsvps, deleteRsvp } from "./js/rsvp-service.js";
     import { SHOWS } from "./js/event-data.js";
 
     if (window.location.protocol === "file:") {
@@ -881,115 +923,97 @@ Thầy Cô tổ Tiếng Anh"></textarea>
       if (banner) banner.hidden = false;
     }
 
-    const ADMIN_PIN = "1120";
-    const ALT_PIN = "1120";
-    const SESSION_KEY = "imap_gala_admin_session_v1";
+    const REFRESH_MS = 30000;
 
     const pinScreen = document.getElementById("pinScreen");
     const adminDashboard = document.getElementById("adminDashboard");
-    const pinInput = document.getElementById("pinInput");
-    const pinForm = document.getElementById("pinForm");
+    const loginForm = document.getElementById("loginForm");
+    const loginEmail = document.getElementById("loginEmail");
+    const loginPassword = document.getElementById("loginPassword");
+    const loginBtn = document.getElementById("loginBtn");
     const pinError = document.getElementById("pinError");
     const adminLogoutBtn = document.getElementById("adminLogoutBtn");
+    const syncNote = document.getElementById("syncNote");
 
     let rsvpList = [];
     let activeFilter = "all";
     let activeRegion = "all";
     let activeSearch = "";
-    let unsubRsvp = null;
-    let initialLoadDone = false;
-    let isCheckingPin = false;
+    let refreshTimer = null;
+    let loadError = "";
+
+    const LOGIN_ERRORS = {
+      NOT_ADMIN: "Tài khoản này không có quyền admin.",
+      INVALID_LOGIN_CREDENTIALS: "Sai email hoặc mật khẩu.",
+      INVALID_PASSWORD: "Sai email hoặc mật khẩu.",
+      EMAIL_NOT_FOUND: "Sai email hoặc mật khẩu.",
+      INVALID_EMAIL: "Email không hợp lệ.",
+      USER_DISABLED: "Tài khoản đã bị khóa.",
+    };
 
     /* ============================================================
        AUTH & SCREEN SWITCHING VIA .hidden CLASS
     ============================================================ */
     function showPinScreen() {
-      if (unsubRsvp) { try { unsubRsvp(); } catch (e) { } unsubRsvp = null; }
-      sessionStorage.removeItem(SESSION_KEY);
-
+      clearInterval(refreshTimer);
+      signOutAdmin();
+      rsvpList = [];
       adminDashboard.classList.add("hidden");
       pinScreen.classList.remove("hidden");
-      if (pinInput) {
-        pinInput.value = "";
-        setTimeout(() => pinInput.focus(), 150);
-      }
+      if (loginPassword) loginPassword.value = "";
       if (pinError) pinError.textContent = "";
+      setTimeout(() => (loginEmail.value ? loginPassword : loginEmail).focus(), 150);
     }
 
     function unlockDashboard() {
-      sessionStorage.setItem(SESSION_KEY, "1");
       pinScreen.classList.add("hidden");
       adminDashboard.classList.remove("hidden");
       startDataSync();
     }
 
-    function checkPinSubmit() {
-      if (isCheckingPin) return;
-      isCheckingPin = true;
-      const val = (pinInput?.value || "").trim();
-      if (val === ADMIN_PIN || val === ALT_PIN) {
-        if (pinError) pinError.textContent = "";
-        unlockDashboard();
-      } else {
-        if (pinError) pinError.textContent = "Mã PIN không đúng, vui lòng thử lại.";
-        if (pinInput) {
-          pinInput.value = "";
-          pinInput.focus();
-        }
+    async function submitLogin() {
+      const email = loginEmail.value.trim();
+      const password = loginPassword.value;
+      if (!email || !password) {
+        pinError.textContent = "Vui lòng nhập email và mật khẩu.";
+        return;
       }
-      setTimeout(() => { isCheckingPin = false; }, 150);
+      loginBtn.disabled = true;
+      pinError.textContent = "";
+      try {
+        await signInAdmin(email, password);
+        unlockDashboard();
+      } catch (err) {
+        const code = String(err.code || "").split(" ")[0];
+        pinError.textContent = LOGIN_ERRORS[code] || (code.startsWith("TOO_MANY") ? "Thử sai quá nhiều lần, đợi vài phút rồi thử lại." : "Không đăng nhập được, kiểm tra mạng rồi thử lại.");
+        console.error("Admin login error:", err.code || err);
+      } finally {
+        loginBtn.disabled = false;
+      }
     }
 
     /* ============================================================
        DATA SYNC (RSVP realtime + Safety Timeout)
     ============================================================ */
-    function startDataSync() {
-      const safetyTimer = setTimeout(() => {
-        if (!initialLoadDone) {
-          initialLoadDone = true;
-          processAndRender();
-        }
-      }, 3500);
-
-      // Fetch song song guestbookCollection (chính) & rsvpCollection (phụ)
-      Promise.allSettled([
-        getDocs(query(guestbookCollection)),
-        getDocs(query(rsvpCollection))
-      ]).then(([gbRes, rsvpRes]) => {
-        const map = new Map();
-        if (gbRes.status === "fulfilled" && gbRes.value) {
-          gbRes.value.docs.forEach((d) => map.set(d.id, { id: d.id, ...d.data() }));
-        }
-        if (rsvpRes.status === "fulfilled" && rsvpRes.value) {
-          rsvpRes.value.docs.forEach((d) => {
-            if (!map.has(d.id)) map.set(d.id, { id: d.id, ...d.data() });
-          });
-        }
-        rsvpList = Array.from(map.values());
-        clearTimeout(safetyTimer);
-        initialLoadDone = true;
-        processAndRender();
-      }).catch((err) => {
-        console.warn("Initial getDocs fetch warning:", err);
-        clearTimeout(safetyTimer);
-        initialLoadDone = true;
-        processAndRender();
-      });
-
-      // Realtime onSnapshot
-      if (unsubRsvp) { try { unsubRsvp(); } catch (e) { } }
+    async function refreshData() {
       try {
-        unsubRsvp = onSnapshot(query(guestbookCollection), (snapshot) => {
-          rsvpList = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-          initialLoadDone = true;
-          processAndRender();
-        }, (err) => {
-          console.error("Firestore Snapshot Error:", err);
-          if (!initialLoadDone) processAndRender();
-        });
+        rsvpList = await loadAllRsvps();
+        loadError = "";
+        if (syncNote) syncNote.textContent = `Cập nhật lúc ${new Date().toLocaleTimeString("vi-VN")} · tự làm mới mỗi 30 giây`;
       } catch (err) {
-        console.warn("Realtime onSnapshot failed:", err);
+        console.error("Load RSVP error:", err.code || err);
+        if (err.code === "NOT_SIGNED_IN") { showPinScreen(); return; }
+        loadError = err.status === 401 || err.status === 403
+          ? "Không đọc được dữ liệu: tài khoản không phải admin hoặc chưa Publish rules."
+          : "Không tải được dữ liệu, kiểm tra mạng rồi bấm Làm mới.";
       }
+      processAndRender();
+    }
+
+    function startDataSync() {
+      clearInterval(refreshTimer);
+      refreshData();
+      refreshTimer = setInterval(refreshData, REFRESH_MS);
     }
 
     function processAndRender() {
@@ -1061,7 +1085,7 @@ Thầy Cô tổ Tiếng Anh"></textarea>
       if (items.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" class="empty-state">Chưa có dữ liệu hoặc không tìm thấy thông tin phù hợp</td>
+            <td colspan="6" class="empty-state">${escapeHtml(loadError || "Chưa có dữ liệu hoặc không tìm thấy thông tin phù hợp")}</td>
           </tr>
         `;
         return;
@@ -1089,6 +1113,7 @@ Thầy Cô tổ Tiếng Anh"></textarea>
               <span class="badge-status ${badgeClass}">${badgeText}</span>
             </td>
             <td class="td-time">${timeStr}</td>
+            <td class="td-act"><button type="button" class="btn-del" data-id="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name || "")}" title="Xóa phản hồi này" aria-label="Xóa">🗑</button></td>
           </tr>
         `;
       }).join("");
@@ -1210,18 +1235,27 @@ Thầy Cô tổ Tiếng Anh"></textarea>
     ============================================================ */
     function initApp() {
       // 1. Gắn toàn bộ Event Listeners ngay lập tức
-      if (pinInput) {
-        pinInput.addEventListener("input", () => {
-          if (pinError) pinError.textContent = "";
-          if (pinInput.value.trim().length === 4) checkPinSubmit();
-        });
-      }
-      if (pinForm) {
-        pinForm.addEventListener("submit", (e) => {
-          e.preventDefault();
-          checkPinSubmit();
-        });
-      }
+      loginForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        submitLogin();
+      });
+      document.getElementById("adminRefreshBtn").addEventListener("click", refreshData);
+
+      // Xóa từng phản hồi (vd bản ghi thử)
+      document.getElementById("guestTableBody").addEventListener("click", async (e) => {
+        const btn = e.target.closest(".btn-del");
+        if (!btn) return;
+        if (!confirm(`Xóa phản hồi của "${btn.dataset.name}"? Không khôi phục được.`)) return;
+        btn.disabled = true;
+        try {
+          await deleteRsvp(btn.dataset.id);
+          await refreshData();
+        } catch (err) {
+          console.error("Delete RSVP error:", err.code || err);
+          alert("Không xóa được, thử lại sau.");
+          btn.disabled = false;
+        }
+      });
       if (adminLogoutBtn) {
         adminLogoutBtn.addEventListener("click", (e) => {
           e.preventDefault();
@@ -1282,8 +1316,8 @@ Thầy Cô tổ Tiếng Anh"></textarea>
         });
       }
 
-      // 2. Kiểm tra session hiện tại
-      if (sessionStorage.getItem(SESSION_KEY) === "1") {
+      // 2. Còn phiên đăng nhập trong tab này thì vào thẳng
+      if (currentAdmin()) {
         unlockDashboard();
       } else {
         showPinScreen();

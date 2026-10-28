@@ -9,7 +9,7 @@ Hai suất chiếu: TP. Hồ Chí Minh 15/11/2026 · Hà Nội 22/11/2026.
 --------------------------------------------------------------
 TAZ0000_IMAP/
 ├── index.html              (thiệp mời)
-├── admin.html              (quản trị xác nhận tham dự)
+├── admin.html              (quản trị xác nhận tham dự — đăng nhập admin Firebase)
 ├── css/
 │   ├── style.css           (biến màu/font, layout chung, reveal, nút nhạc, lightbox)
 │   ├── intro.css           (màn mở đầu: màn nhung, máy quay, chuyển cảnh)
@@ -17,7 +17,8 @@ TAZ0000_IMAP/
 │   └── sections.css        (Bìa, Lịch chiếu, Timeline, Giới thiệu, Thư ngỏ, Xác nhận, The End)
 ├── js/
 │   ├── event-data.js       (TOÀN BỘ thông tin sự kiện — khách gửi gì thì sửa file này)
-│   ├── firebase-config.js  (Firestore: events/TAZ0000/guestbook & rsvp)
+│   ├── firebase-config.js  (project graduation-65518, node invitations/imap-gala-2026/rsvp)
+│   ├── rsvp-service.js     (gửi xác nhận / đăng nhập admin qua REST)
 │   ├── main.js             (chỉ khởi động các module)
 │   ├── intro-curtain.js    (màn mở đầu + bụi sáng)
 │   ├── sfx.js              (tiếng màn, tiếng máy chiếu — tự tạo nếu thiếu file)
@@ -71,15 +72,19 @@ Link thử tên khách: http://localhost:3000/?name=Th%E1%BA%A7y%20Minh
 Thiếu file nào thì thiệp vẫn chạy (ẩn/khung chờ), không báo lỗi ra màn hình.
 
 --------------------------------------------------------------
-5. QUẢN TRỊ (admin.html)
+5. QUẢN TRỊ (admin.html) + FIREBASE
 --------------------------------------------------------------
-- Mã PIN: 1120
+- Đăng nhập bằng tài khoản admin Firebase của project Graduation (graduation-65518),
+  cùng tài khoản đang dùng cho thiệp Khánh Linh. Không còn PIN.
 - Danh sách xác nhận, lọc theo phản hồi và theo suất chiếu (HCM / Hà Nội),
-  số đếm riêng từng suất, tạo link mời cá nhân hóa hàng loạt.
-- Firestore Collections:
-    • events/TAZ0000/guestbook
-    • events/TAZ0000/rsvp
-  Mỗi bản ghi: name, status, attend, region ("hcm" | "hn"), eventId ("TAZ0000"), urlName, createdAt.
+  số đếm riêng từng suất, nút Xóa từng phản hồi, tự làm mới mỗi 30 giây,
+  tạo link mời cá nhân hóa hàng loạt.
+- Dữ liệu: Realtime Database, node invitations/imap-gala-2026/rsvp
+  Mỗi bản ghi: name, attend ("yes"|"no"), region ("hcm"|"hn"), eventId ("TAZ0000"),
+  urlName, authorId, createdAt.
+- Rules: dán file gộp D:\Taz_thiepirebase-graduation-65518.rules.json vào
+  Realtime Database → Rules → Publish (KHÔNG dán riêng khối của thiệp này).
+- Khách gửi xác nhận bằng đăng nhập ẩn danh (Anonymous phải đang bật trong Authentication).
 
 --------------------------------------------------------------
 6. DEPLOY (Cloudflare Pages — Direct Upload)
