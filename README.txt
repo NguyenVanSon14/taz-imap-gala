@@ -82,7 +82,7 @@ Thiếu file nào thì thiệp vẫn chạy (ẩn/khung chờ), không báo lỗ
 - Dữ liệu: Realtime Database, node invitations/imap-gala-2026/rsvp
   Mỗi bản ghi: name, attend ("yes"|"no"), region ("hcm"|"hn"), eventId ("TAZ0000"),
   urlName, authorId, createdAt.
-- Rules: dán file gộp D:\Taz_thiepirebase-graduation-65518.rules.json vào
+- Rules: dán file gộp D:\Taz_thiep\firebase-graduation-65518.rules.json vào
   Realtime Database → Rules → Publish (KHÔNG dán riêng khối của thiệp này).
 - Khách gửi xác nhận bằng đăng nhập ẩn danh (Anonymous phải đang bật trong Authentication).
 
