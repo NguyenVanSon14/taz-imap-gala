@@ -10,6 +10,21 @@ const ADMIN_SESSION_KEY = "taz-imap-gala-admin-session";
 let guestSession = null;
 let adminSession = null;
 
+// Chưa điền cấu hình (hoặc databaseURL lạ) thì không gọi mạng
+export function isRsvpServiceReady() {
+  if (!firebaseConfig.apiKey) return false;
+  try {
+    const url = new URL(firebaseConfig.databaseURL);
+    return url.protocol === "https:" && /\.(firebaseio\.com|firebasedatabase\.app)$/.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function notConfigured() {
+  return Object.assign(new Error("NOT_CONFIGURED"), { code: "NOT_CONFIGURED" });
+}
+
 async function request(url, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12000);
@@ -105,6 +120,7 @@ async function getGuestSession() {
 
 // Gửi lại với cùng id thì ghi đè đúng bản đó, mạng chập chờn cũng không tạo bản trùng
 export async function sendRsvp({ id, name, attend, region, eventId, urlName, createdAt }) {
+  if (!isRsvpServiceReady()) throw notConfigured();
   const session = await getGuestSession();
   const body = { name, attend, region, eventId, urlName, createdAt, authorId: session.uid };
   await request(rsvpUrl([id], { auth: session.token }), { method: "PUT", body: JSON.stringify(body) });
@@ -128,6 +144,7 @@ export function currentAdmin() {
 }
 
 export async function signInAdmin(email, password) {
+  if (!isRsvpServiceReady()) throw notConfigured();
   const result = await request(authUrl("signInWithPassword"), {
     method: "POST",
     body: JSON.stringify({ email, password, returnSecureToken: true }),

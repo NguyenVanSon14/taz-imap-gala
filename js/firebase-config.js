@@ -1,15 +1,17 @@
 // ============================================================
 // FIREBASE CONFIG — Gala 20/11 IMAP "ĐIỆN ẢNH – Scenes of Inspiration" (TAZ0000)
-// Project: graduation-65518 (Realtime Database), dùng chung với các thiệp khác.
+// Project Firebase RIÊNG cho thiệp sự kiện (tách khỏi project thiệp tốt nghiệp).
+// Lấy 4 giá trị trong Firebase Console → Project settings → Your apps (xem FIREBASE.md).
 // Node riêng của đơn này: invitations/imap-gala-2026/rsvp
-// Rules phải là bản gộp: D:\Taz_thiep\firebase-graduation-65518.rules.json
+// Rules gộp của project sự kiện: D:\Taz_thiep\firebase-taz-events.rules.json
 // apiKey của ứng dụng web là mã công khai. KHÔNG ghi mật khẩu admin vào file này.
+// Để trống thì thiệp vẫn chạy, chỉ form xác nhận báo "chưa gửi được".
 // ============================================================
 export const firebaseConfig = {
-  apiKey: "AIzaSyA11Mxyc9psGg6gayNt7RHQJ6EiDmOQ2eI",
-  authDomain: "graduation-65518.firebaseapp.com",
-  projectId: "graduation-65518",
-  databaseURL: "https://graduation-65518-default-rtdb.asia-southeast1.firebasedatabase.app",
+  apiKey: "",      // TODO: điền từ project Firebase sự kiện mới
+  authDomain: "",  // "<project-id>.firebaseapp.com"
+  projectId: "",
+  databaseURL: "", // "https://<project-id>-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 export const rsvpConfig = {

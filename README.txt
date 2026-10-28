@@ -17,7 +17,7 @@ TAZ0000_IMAP/
 │   └── sections.css        (Bìa, Lịch chiếu, Timeline, Giới thiệu, Thư ngỏ, Xác nhận, The End)
 ├── js/
 │   ├── event-data.js       (TOÀN BỘ thông tin sự kiện — khách gửi gì thì sửa file này)
-│   ├── firebase-config.js  (project graduation-65518, node invitations/imap-gala-2026/rsvp)
+│   ├── firebase-config.js  (project Firebase sự kiện riêng, node invitations/imap-gala-2026/rsvp)
 │   ├── rsvp-service.js     (gửi xác nhận / đăng nhập admin qua REST)
 │   ├── main.js             (chỉ khởi động các module)
 │   ├── intro-curtain.js    (màn mở đầu + bụi sáng)
@@ -74,15 +74,15 @@ Thiếu file nào thì thiệp vẫn chạy (ẩn/khung chờ), không báo lỗ
 --------------------------------------------------------------
 5. QUẢN TRỊ (admin.html) + FIREBASE
 --------------------------------------------------------------
-- Đăng nhập bằng tài khoản admin Firebase của project Graduation (graduation-65518),
-  cùng tài khoản đang dùng cho thiệp Khánh Linh. Không còn PIN.
+- Đăng nhập bằng tài khoản admin Firebase của project sự kiện riêng (tách khỏi project
+  thiệp tốt nghiệp). Không còn PIN. Cách tạo project: xem FIREBASE.md.
 - Danh sách xác nhận, lọc theo phản hồi và theo suất chiếu (HCM / Hà Nội),
   số đếm riêng từng suất, nút Xóa từng phản hồi, tự làm mới mỗi 30 giây,
   tạo link mời cá nhân hóa hàng loạt.
 - Dữ liệu: Realtime Database, node invitations/imap-gala-2026/rsvp
   Mỗi bản ghi: name, attend ("yes"|"no"), region ("hcm"|"hn"), eventId ("TAZ0000"),
   urlName, authorId, createdAt.
-- Rules: dán file gộp D:\Taz_thiep\firebase-graduation-65518.rules.json vào
+- Rules: dán file gộp D:\Taz_thiep\firebase-taz-events.rules.json vào
   Realtime Database → Rules → Publish (KHÔNG dán riêng khối của thiệp này).
 - Khách gửi xác nhận bằng đăng nhập ẩn danh (Anonymous phải đang bật trong Authentication).
 
